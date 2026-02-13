@@ -18,7 +18,7 @@ export default function DashboardHome() {
   useEffect(() => {
     if (!auth) return;
 
-    // NOTICE THE "!"
+    // FIX: Added '!' after auth
     const unsubscribe = onAuthStateChanged(auth!, (user) => {
       if (!user) {
         router.push('/login');
@@ -42,7 +42,7 @@ export default function DashboardHome() {
   const handleLogout = async () => {
     if (!auth) return;
     try {
-      // NOTICE THE "!"
+      // FIX: Added '!' after auth
       await signOut(auth!);
       router.push('/login'); 
     } catch (error) {
@@ -58,6 +58,7 @@ export default function DashboardHome() {
     );
   }
 
+  // Calculate Insights
   const totalUsers = users.length;
   const coachesCount = users.filter((u) => u.role === 'coach').length;
   const membersCount = totalUsers - coachesCount;
@@ -66,32 +67,38 @@ export default function DashboardHome() {
     { name: 'Members', value: membersCount },
     { name: 'Coaches', value: coachesCount },
   ];
-  const COLORS = ['#3b82f6', '#10b981'];
+  const COLORS = ['#3b82f6', '#10b981']; 
 
   return (
     <div className="min-h-screen bg-gray-50 p-8 text-black">
       <div className="max-w-7xl mx-auto space-y-8">
+        
+        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Platform Overview</h1>
             <p className="text-gray-500 mt-1">Real-time insights for New Freedom Coaching</p>
           </div>
+          
           <div className="flex items-center gap-3">
             <Link href="/create-coach" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm">
               <UserPlus size={20} /> Add New Coach
             </Link>
+            
             <button onClick={handleLogout} className="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm">
               <LogOut size={20} /> Sign Out
             </button>
           </div>
         </div>
 
+        {/* Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <MetricCard title="Total Users" value={totalUsers} icon={<Users size={24} className="text-blue-600" />} />
           <MetricCard title="Active Coaches" value={coachesCount} icon={<ShieldCheck size={24} className="text-green-600" />} />
           <MetricCard title="Active Members" value={membersCount} icon={<Activity size={24} className="text-purple-600" />} />
         </div>
 
+        {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
             <h3 className="text-lg font-bold mb-4">User Distribution</h3>
@@ -113,6 +120,7 @@ export default function DashboardHome() {
             </div>
           </div>
 
+          {/* Table */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
             <h3 className="text-lg font-bold mb-4">Recent Registrations</h3>
             <div className="overflow-y-auto flex-1">
