@@ -16,22 +16,30 @@ export default function DashboardHome() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth) return;
+    // FIX 1: If auth is missing (e.g. bad API keys), don't hang. Redirect immediately.
+    if (!auth) {
+      console.error("Firebase Auth not initialized. Checking API keys...");
+      setLoading(false); // Stop the spinner!
+      router.push('/login');
+      return;
+    }
 
-    // FIX: Added '!' after auth
-    const unsubscribe = onAuthStateChanged(auth!, (user) => {
+    // FIX 2: Use (auth as any) to bypass TypeScript strictness
+    const unsubscribe = onAuthStateChanged((auth as any), (user) => {
       if (!user) {
+        // Not logged in? Go to login.
         router.push('/login');
       } else {
+        // Logged in? Fetch data.
         fetch('/api/users')
           .then((res) => res.json())
           .then((data) => {
             if (data.success) setUsers(data.users);
-            setLoading(false);
+            setLoading(false); // Stop the spinner!
           })
           .catch((err) => {
             console.error("Error fetching users:", err);
-            setLoading(false);
+            setLoading(false); // Stop the spinner even on error!
           });
       }
     });
@@ -42,8 +50,7 @@ export default function DashboardHome() {
   const handleLogout = async () => {
     if (!auth) return;
     try {
-      // FIX: Added '!' after auth
-      await signOut(auth!);
+      await signOut((auth as any));
       router.push('/login'); 
     } catch (error) {
       console.error("Error signing out:", error);
@@ -52,8 +59,9 @@ export default function DashboardHome() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-600 font-medium text-lg">
-        Authenticating & Loading Intelligence...
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-gray-600 font-medium">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+        <p>Connecting to Secure Database...</p>
       </div>
     );
   }
