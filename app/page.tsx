@@ -1,32 +1,70 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Users, Activity, ShieldCheck, UserPlus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { Users, Activity, ShieldCheck, UserPlus, LogOut } from 'lucide-react';
 import Link from 'next/link';
 
+// Firebase Auth Imports
+import { auth } from '../lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+
 export default function DashboardHome() {
+  const router = useRouter();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch user data from our new API
-    fetch('/api/users')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setUsers(data.users);
-        setLoading(false);
-      });
-  }, []);
+    // 1. Listen for Firebase Authentication State
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        // If no user is logged in, immediately kick them to the login screen
+        router.push('/login');
+      } else {
+        // If they ARE logged in, fetch the user analytics data
+        fetch('/api/users')
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) setUsers(data.users);
+            setLoading(false);
+          })
+          .catch((err) => {
+            console.error("Error fetching users:", err);
+            setLoading(false);
+          });
+      }
+    });
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-black">Loading Intelligence...</div>;
+    // Cleanup the listener when the component unmounts
+    return () => unsubscribe();
+  }, [router]);
+
+  // Handle the Sign Out button click
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/login'); // Redirect to login after signing out
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  // Show a loading screen while checking auth and fetching data
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-600 font-medium text-lg">
+        Authenticating & Loading Intelligence...
+      </div>
+    );
+  }
 
   // Calculate Insights
   const totalUsers = users.length;
-  const coachesCount = users.filter(u => u.role === 'coach').length;
+  const coachesCount = users.filter((u) => u.role === 'coach').length;
   const membersCount = totalUsers - coachesCount;
   
-  // Data for Charts
+  // Data for the Pie Chart
   const roleData = [
     { name: 'Members', value: membersCount },
     { name: 'Coaches', value: coachesCount },
@@ -37,15 +75,22 @@ export default function DashboardHome() {
     <div className="min-h-screen bg-gray-50 p-8 text-black">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* Header */}
-        <div className="flex justify-between items-center">
+        {/* Header Area */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Platform Overview</h1>
             <p className="text-gray-500 mt-1">Real-time insights for New Freedom Coaching</p>
           </div>
-          <Link href="/create-coach" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
-            <UserPlus size={20} /> Add New Coach
-          </Link>
+          
+          <div className="flex items-center gap-3">
+            <Link href="/create-coach" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm">
+              <UserPlus size={20} /> Add New Coach
+            </Link>
+            
+            <button onClick={handleLogout} className="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm">
+              <LogOut size={20} /> Sign Out
+            </button>
+          </div>
         </div>
 
         {/* Top Metric Cards */}
@@ -57,10 +102,11 @@ export default function DashboardHome() {
 
         {/* Visual Charts Area */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
           {/* User Distribution Chart */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
             <h3 className="text-lg font-bold mb-4">User Distribution</h3>
-            <div className="h-64">
+            <div className="flex-1 min-h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={roleData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
@@ -72,7 +118,7 @@ export default function DashboardHome() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex justify-center gap-6 mt-4 text-sm">
+            <div className="flex justify-center gap-6 mt-4 text-sm font-medium">
               <span className="flex items-center gap-2"><div className="w-3 h-3 bg-blue-500 rounded-full"></div> Members</span>
               <span className="flex items-center gap-2"><div className="w-3 h-3 bg-green-500 rounded-full"></div> Coaches</span>
             </div>
@@ -92,7 +138,7 @@ export default function DashboardHome() {
                 </thead>
                 <tbody>
                   {users.slice(0, 6).map((user, i) => (
-                    <tr key={i} className="border-b border-gray-50 last:border-0">
+                    <tr key={i} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
                       <td className="py-3 font-medium">{user.name || 'Anonymous'}</td>
                       <td className="py-3 text-gray-500">{user.email}</td>
                       <td className="py-3">
@@ -106,6 +152,7 @@ export default function DashboardHome() {
               </table>
             </div>
           </div>
+          
         </div>
 
       </div>

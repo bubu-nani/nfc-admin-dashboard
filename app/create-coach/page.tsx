@@ -1,8 +1,20 @@
-"use client"; // This tells Next.js this is an interactive frontend component
+"use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+
+// Firebase Auth Imports
+import { auth } from '../../lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function CreateCoachPage() {
+  const router = useRouter();
+  
+  // State to block the page from showing until we verify the user
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
   // State to hold the form data
   const [formData, setFormData] = useState({
     name: '',
@@ -11,8 +23,23 @@ export default function CreateCoachPage() {
     specialty: ''
   });
 
-  // State to handle loading, success, and error messages
+  // State to handle API loading, success, and error messages
   const [status, setStatus] = useState({ loading: false, error: '', success: '' });
+
+  // --- SECURITY: LOCK THE DOOR ---
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        // Kick unauthorized users to the login screen instantly
+        router.push('/login');
+      } else {
+        // Unblock the page for the verified Admin
+        setIsAuthLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
 
   // Handle typing in the text boxes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -25,7 +52,6 @@ export default function CreateCoachPage() {
     setStatus({ loading: true, error: '', success: '' });
 
     try {
-      // Send the data to the API Route you just built!
       const response = await fetch('/api/create-coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,8 +62,7 @@ export default function CreateCoachPage() {
 
       if (response.ok) {
         setStatus({ loading: false, error: '', success: 'Coach created successfully! They can now log into the app.' });
-        // Clear the form
-        setFormData({ name: '', email: '', password: '', specialty: '' }); 
+        setFormData({ name: '', email: '', password: '', specialty: '' }); // Clear form
       } else {
         setStatus({ loading: false, error: data.error || 'Failed to create coach.', success: '' });
       }
@@ -46,8 +71,21 @@ export default function CreateCoachPage() {
     }
   };
 
+  // Show a blank loading screen while the security check runs
+  if (isAuthLoading) {
+    return <div className="min-h-screen bg-gray-50"></div>; 
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-6 lg:px-8 relative">
+      
+      {/* Back to Dashboard Button */}
+      <div className="absolute top-8 left-8">
+        <Link href="/" className="flex items-center gap-2 text-gray-500 hover:text-blue-600 transition-colors font-medium">
+          <ArrowLeft size={20} /> Back to Dashboard
+        </Link>
+      </div>
+
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Add a New Coach
