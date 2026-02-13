@@ -16,16 +16,13 @@ export default function DashboardHome() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // SAFETY CHECK: If auth is null (during build), stop here.
     if (!auth) return;
 
-    // 1. Listen for Firebase Authentication State
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    // NOTICE THE "!"
+    const unsubscribe = onAuthStateChanged(auth!, (user) => {
       if (!user) {
-        // If no user is logged in, immediately kick them to the login screen
         router.push('/login');
       } else {
-        // If they ARE logged in, fetch the user analytics data
         fetch('/api/users')
           .then((res) => res.json())
           .then((data) => {
@@ -39,24 +36,20 @@ export default function DashboardHome() {
       }
     });
 
-    // Cleanup the listener when the component unmounts
     return () => unsubscribe();
   }, [router]);
 
-  // Handle the Sign Out button click
   const handleLogout = async () => {
-    // SAFETY CHECK
     if (!auth) return;
-
     try {
-      await signOut(auth);
-      router.push('/login'); // Redirect to login after signing out
+      // NOTICE THE "!"
+      await signOut(auth!);
+      router.push('/login'); 
     } catch (error) {
       console.error("Error signing out:", error);
     }
   };
 
-  // Show a loading screen while checking auth and fetching data
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-600 font-medium text-lg">
@@ -65,51 +58,41 @@ export default function DashboardHome() {
     );
   }
 
-  // Calculate Insights
   const totalUsers = users.length;
   const coachesCount = users.filter((u) => u.role === 'coach').length;
   const membersCount = totalUsers - coachesCount;
   
-  // Data for the Pie Chart
   const roleData = [
     { name: 'Members', value: membersCount },
     { name: 'Coaches', value: coachesCount },
   ];
-  const COLORS = ['#3b82f6', '#10b981']; // Blue for members, Green for coaches
+  const COLORS = ['#3b82f6', '#10b981'];
 
   return (
     <div className="min-h-screen bg-gray-50 p-8 text-black">
       <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* Header Area */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Platform Overview</h1>
             <p className="text-gray-500 mt-1">Real-time insights for New Freedom Coaching</p>
           </div>
-          
           <div className="flex items-center gap-3">
             <Link href="/create-coach" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm">
               <UserPlus size={20} /> Add New Coach
             </Link>
-            
             <button onClick={handleLogout} className="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm">
               <LogOut size={20} /> Sign Out
             </button>
           </div>
         </div>
 
-        {/* Top Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <MetricCard title="Total Users" value={totalUsers} icon={<Users size={24} className="text-blue-600" />} />
           <MetricCard title="Active Coaches" value={coachesCount} icon={<ShieldCheck size={24} className="text-green-600" />} />
           <MetricCard title="Active Members" value={membersCount} icon={<Activity size={24} className="text-purple-600" />} />
         </div>
 
-        {/* Visual Charts Area */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-          {/* User Distribution Chart */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
             <h3 className="text-lg font-bold mb-4">User Distribution</h3>
             <div className="flex-1 min-h-[250px]">
@@ -130,7 +113,6 @@ export default function DashboardHome() {
             </div>
           </div>
 
-          {/* Database Table */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
             <h3 className="text-lg font-bold mb-4">Recent Registrations</h3>
             <div className="overflow-y-auto flex-1">
@@ -158,15 +140,12 @@ export default function DashboardHome() {
               </table>
             </div>
           </div>
-          
         </div>
-
       </div>
     </div>
   );
 }
 
-// Small helper component for the metric boxes
 function MetricCard({ title, value, icon }: { title: string, value: number, icon: any }) {
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
