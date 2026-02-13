@@ -1,5 +1,4 @@
 "use client";
- export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -17,6 +16,9 @@ export default function DashboardHome() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // SAFETY CHECK: If auth is null (during build), stop here.
+    if (!auth) return;
+
     // 1. Listen for Firebase Authentication State
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
@@ -43,6 +45,9 @@ export default function DashboardHome() {
 
   // Handle the Sign Out button click
   const handleLogout = async () => {
+    // SAFETY CHECK
+    if (!auth) return;
+
     try {
       await signOut(auth);
       router.push('/login'); // Redirect to login after signing out

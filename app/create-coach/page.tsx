@@ -1,5 +1,4 @@
 "use client";
-export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -29,6 +28,9 @@ export default function CreateCoachPage() {
 
   // --- SECURITY: LOCK THE DOOR ---
   useEffect(() => {
+    // SAFETY CHECK: If auth is null (during build), stop here.
+    if (!auth) return; 
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
         // Kick unauthorized users to the login screen instantly

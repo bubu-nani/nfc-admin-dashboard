@@ -15,6 +15,10 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // SAFETY CHECK: If auth is null (during build), stop here.
+    if (!auth) return;
+
     setLoading(true);
     setError('');
 
