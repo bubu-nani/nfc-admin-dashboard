@@ -18,7 +18,7 @@ export default function DashboardHome() {
   useEffect(() => {
     // FIX 1: If auth is missing (e.g. bad API keys), don't hang. Redirect immediately.
     if (!auth) {
-      console.error("Firebase Auth not initialized. Checking API keys...");
+      console.error("Firebase auth not initialized. Checking API keys...");
       setLoading(false); // Stop the spinner!
       router.push('/login');
       return;
